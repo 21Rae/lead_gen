@@ -11,36 +11,6 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
-  // Proxy routes for geographical data to bypass CORS and improve reliability
-  const GEO_BASE_URL = "https://countriesnow.space/api/v0.1/countries";
-
-  app.get("/api/geo/countries", async (req, res) => {
-    try {
-      const response = await axios.get(`${GEO_BASE_URL}/info?returns=none`);
-      res.json(response.data);
-    } catch (error: any) {
-      res.status(error.response?.status || 500).send(error.message);
-    }
-  });
-
-  app.post("/api/geo/states", async (req, res) => {
-    try {
-      const response = await axios.post(`${GEO_BASE_URL}/states`, req.body);
-      res.json(response.data);
-    } catch (error: any) {
-      res.status(error.response?.status || 500).send(error.message);
-    }
-  });
-
-  app.post("/api/geo/cities", async (req, res) => {
-    try {
-      const response = await axios.post(`${GEO_BASE_URL}/state/cities`, req.body);
-      res.json(response.data);
-    } catch (error: any) {
-      res.status(error.response?.status || 500).send(error.message);
-    }
-  });
-
   // Proxy route to handle the webhook submission and bypass CORS
   app.post("/api/submit-leads", async (req, res) => {
     const payload = req.body;
