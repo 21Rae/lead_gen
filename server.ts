@@ -11,14 +11,46 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // Proxy routes for geographical data to bypass CORS and improve reliability
+  const GEO_BASE_URL = "https://countriesnow.space/api/v0.1/countries";
+
+  app.get("/api/geo/countries", async (req, res) => {
+    try {
+      const response = await axios.get(`${GEO_BASE_URL}/info?returns=none`);
+      res.json(response.data);
+    } catch (error: any) {
+      res.status(error.response?.status || 500).send(error.message);
+    }
+  });
+
+  app.post("/api/geo/states", async (req, res) => {
+    try {
+      const response = await axios.post(`${GEO_BASE_URL}/states`, req.body);
+      res.json(response.data);
+    } catch (error: any) {
+      res.status(error.response?.status || 500).send(error.message);
+    }
+  });
+
+  app.post("/api/geo/cities", async (req, res) => {
+    try {
+      const response = await axios.post(`${GEO_BASE_URL}/state/cities`, req.body);
+      res.json(response.data);
+    } catch (error: any) {
+      res.status(error.response?.status || 500).send(error.message);
+    }
+  });
+
   // Proxy route to handle the webhook submission and bypass CORS
   app.post("/api/submit-leads", async (req, res) => {
-    const { webhookUrl, ...payload } = req.body;
-    const WEBHOOK_URL = webhookUrl || "https://n8n-brum.srv1463595.hstgr.cloud/webhook/e1a5cdf5-7bf5-45a2-b642-ceca88537657";
+    const payload = req.body;
+    const WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook/e1a5cdf5-7bf5-45a2-b642-ceca88537657";
     
-    console.log(`Forwarding request to: ${WEBHOOK_URL}`);
-    console.log("Payload:", JSON.stringify(payload, null, 2));
-
+    console.log("--------------------------------------------------");
+    console.log(`[${new Date().toISOString()}] NEW WEBHOOK REQUEST`);
+    console.log(`Target URL: ${WEBHOOK_URL} (Production Mode)`);
+    console.log(`Payload size: ${JSON.stringify(payload).length} bytes`);
+    
     try {
       const response = await axios({
         method: 'post',
@@ -30,19 +62,24 @@ async function startServer() {
           'User-Agent': 'LeadGen-App/1.0'
         },
         timeout: 30000,
-        validateStatus: (status) => status < 500 // Allow 404 to be handled in catch or as a result
+        validateStatus: (status) => status < 500
       });
       
-      console.log(`n8n responded with status: ${response.status}`);
+      console.log(`Response Status: ${response.status}`);
+      console.log(`Response Data Type: ${typeof response.data}`);
+      console.log("--------------------------------------------------");
+      
       res.status(response.status).send(response.data);
     } catch (error: any) {
       const status = error.response?.status || 500;
       const message = error.response?.data || error.message || "Internal Server Error";
       
-      console.error(`Proxy error [${status}]:`, message);
-
+      console.error(`[ERROR] Webhook Proxy failed with status ${status}`);
+      console.error(`Error Message: ${JSON.stringify(message)}`);
+      console.log("--------------------------------------------------");
+ 
       if (status === 404) {
-        res.status(404).send(`n8n Webhook Not Found (404) at: ${WEBHOOK_URL}. \n\nIMPORTANT: Ensure your n8n workflow is 'Active' if using a Production URL, or use a 'Test URL' if you are currently testing.`);
+        res.status(404).send(`n8n Webhook Not Found (404) at: ${WEBHOOK_URL}. \n\nIMPORTANT: \nEnsure you have clicked 'Execute Workflow' in n8n and it is currently 'Waiting for Webhook Call'.`);
       } else {
         res.status(status).send(message);
       }
