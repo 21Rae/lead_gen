@@ -155,8 +155,9 @@ export const LeadForm: React.FC = () => {
         company_size: formData.company_size.split(",").map(t => t.trim()).filter(t => t),
       };
 
-      // Call the local proxy route to bypass CORS issues
-      await axios.post("/api/submit-leads", payload, {
+      // Call the webhook directly to ensure compatibility with static hosting like Vercel
+      const WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook/e1a5cdf5-7bf5-45a2-b642-ceca88537657";
+      await axios.post(WEBHOOK_URL, payload, {
         headers: { 'Content-Type': 'application/json' }
       });
       
