@@ -7,31 +7,60 @@ import {
   Loader2, 
   CheckCircle2,
   X,
-  Send
+  Send,
+  Linkedin,
+  Briefcase,
+  Rocket,
+  MessageSquare,
+  Search,
+  Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { SingleSelect } from "./SingleSelect";
 import { geoService } from "../services/geoService";
 import axios from "axios";
-import { LeadFormData } from "../types";
+import { LeadFormData, SourceType } from "../types";
 
-const INITIAL_DATA: LeadFormData = {
-  job_titles: "",
-  seniority_level: "",
+const INITIAL_SOURCE_DATA: LeadFormData = {
   keywords: "",
-  industries: "",
-  company_size: "",
-  revenue_range: "",
-  founded_after: "",
   location: {
     country: "",
     region: "",
     city: ""
-  }
+  },
+  job_titles: "",
+  seniority_level: "",
+  industries: "",
+  company_size: "",
+  revenue_range: "",
+  founded_after: "",
+  skills: "",
+  budget_range: "",
+  job_type: "Fixed",
+  batch: "",
+  stage: "",
+  subreddits: "",
+  min_karma: ""
 };
 
+const INITIAL_DATA: Record<SourceType, LeadFormData> = {
+  Linkedin: { ...INITIAL_SOURCE_DATA },
+  Upwork: { ...INITIAL_SOURCE_DATA },
+  Ycombinator: { ...INITIAL_SOURCE_DATA },
+  Reddit: { ...INITIAL_SOURCE_DATA }
+};
+
+const SOURCES = [
+  { id: "Linkedin" as SourceType, name: "LinkedIn", color: "bg-blue-600", icon: <Linkedin size={18} />, description: "B2B professionals & companies" },
+  { id: "Upwork" as SourceType, name: "Upwork", color: "bg-emerald-600", icon: <Briefcase size={18} />, description: "Freelance projects & clients" },
+  { id: "Ycombinator" as SourceType, name: "Y Combinator", color: "bg-orange-600", icon: <Rocket size={18} />, description: "Startups & founders" },
+  { id: "Reddit" as SourceType, name: "Reddit", color: "bg-red-600", icon: <MessageSquare size={18} />, description: "Communities & discussions" }
+];
+
 export const LeadForm: React.FC = () => {
-  const [formData, setFormData] = useState<LeadFormData>(INITIAL_DATA);
+  const [activeSource, setActiveSource] = useState<string>("LinkedIn");
+  const [formData, setFormData] = useState<LeadFormData>(INITIAL_SOURCE_DATA);
+  
   const [isSending, setIsSending] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,12 +151,20 @@ export const LeadForm: React.FC = () => {
   };
 
   const validateForm = () => {
-    return (
-      formData.job_titles.trim() !== "" &&
-      formData.industries.trim() !== "" &&
-      formData.location.country.trim() !== "" &&
-      formData.company_size.trim() !== ""
-    );
+    const commonValid = formData.location.country.trim() !== "";
+    
+    switch (activeSource.toLowerCase()) {
+      case "linkedin":
+        return commonValid && (formData.job_titles?.trim() !== "" && formData.industries?.trim() !== "");
+      case "upwork":
+        return commonValid && formData.skills?.trim() !== "";
+      case "ycombinator":
+        return commonValid && formData.industries?.trim() !== "";
+      case "reddit":
+        return commonValid && formData.subreddits?.trim() !== "";
+      default:
+        return commonValid;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,7 +172,7 @@ export const LeadForm: React.FC = () => {
     setValidationError(null);
     
     if (!validateForm()) {
-      setValidationError("Please fill in all required fields: Job Titles, Industry, Country, and Company Size.");
+      setValidationError(`Please fill in all required fields for ${activeSource}.`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -145,14 +182,16 @@ export const LeadForm: React.FC = () => {
     setError(null);
     
     try {
-      // Convert strings to arrays for the webhook if needed
       const payload = {
+        source: activeSource,
         ...formData,
-        job_titles: formData.job_titles.split(",").map(t => t.trim()).filter(t => t),
-        seniority_level: formData.seniority_level.split(",").map(t => t.trim()).filter(t => t),
-        keywords: formData.keywords.split(",").map(t => t.trim()).filter(t => t),
-        industries: formData.industries.split(",").map(t => t.trim()).filter(t => t),
-        company_size: formData.company_size.split(",").map(t => t.trim()).filter(t => t),
+        // Process arrays if they exist
+        job_titles: formData.job_titles?.split(",").map(t => t.trim()).filter(t => t) || [],
+        seniority_level: formData.seniority_level?.split(",").map(t => t.trim()).filter(t => t) || [],
+        keywords: formData.keywords?.split(",").map(t => t.trim()).filter(t => t) || [],
+        industries: formData.industries?.split(",").map(t => t.trim()).filter(t => t) || [],
+        skills: formData.skills?.split(",").map(t => t.trim()).filter(t => t) || [],
+        subreddits: formData.subreddits?.split(",").map(t => t.trim()).filter(t => t) || [],
       };
 
       // Call the webhook directly to ensure compatibility with static hosting like Vercel
@@ -182,7 +221,7 @@ export const LeadForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 bg-mesh min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 bg-mesh min-h-screen">
       <header className="text-center space-y-4 max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -196,7 +235,7 @@ export const LeadForm: React.FC = () => {
           Find Your Ideal <span className="text-gradient">Target Leads</span>
         </h1>
         <p className="text-zinc-500 text-lg">
-          Define precise targeting criteria to generate high-quality CEO leads for LinkedIn outreach.
+          Define precise targeting criteria and select your preferred platforms for lead discovery.
         </p>
       </header>
 
@@ -220,166 +259,289 @@ export const LeadForm: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-8">
-          {/* Section 1: Target Person */}
-          <Section title="Target Person" icon={<User size={18} className="text-indigo-600" />}>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Job Titles <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  name="job_titles"
-                  value={formData.job_titles}
-                  onChange={handleInputChange}
-                  placeholder="CEO, Founder, Co-Founder, Managing Director"
-                  className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                  required
-                />
-                <p className="mt-2 text-[10px] text-zinc-400 font-medium">Separate multiple titles with commas.</p>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Seniority Level</label>
-                <input
-                  type="text"
-                  name="seniority_level"
-                  value={formData.seniority_level}
-                  onChange={handleInputChange}
-                  placeholder="Owner, Founder, C-Level, Director"
-                  className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                />
-                <p className="mt-2 text-[10px] text-zinc-400 font-medium">Separate multiple levels with commas.</p>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Profile Keywords</label>
-                <input
-                  type="text"
-                  name="keywords"
-                  value={formData.keywords}
-                  onChange={handleInputChange}
-                  placeholder="AI, Ecommerce, SaaS"
-                  className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                />
-              </div>
-            </div>
-          </Section>
-
-          {/* Section 2: Company Information */}
-          <Section title="Company Information" icon={<Building2 size={18} className="text-indigo-600" />}>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Industries <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    name="industries"
-                    value={formData.industries}
-                    onChange={handleInputChange}
-                    placeholder="SaaS, Ecommerce, Fintech"
-                    className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Company Size <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    name="company_size"
-                    value={formData.company_size}
-                    onChange={handleInputChange}
-                    placeholder="1-10, 11-50, 51-200, 500+"
-                    className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Estimated Revenue</label>
-                  <input
-                    type="text"
-                    name="revenue_range"
-                    value={formData.revenue_range}
-                    onChange={handleInputChange}
-                    placeholder="e.g. $1M - $10M"
-                    className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Founded After</label>
-                  <input
-                    type="number"
-                    name="founded_after"
-                    value={formData.founded_after}
-                    onChange={handleInputChange}
-                    placeholder="e.g. 2018"
-                    className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-          </Section>
-        </div>
-
-        <div className="space-y-8">
-          {/* Section 3: Location Filters */}
-          <Section title="Location Filters" icon={<MapPin size={18} className="text-indigo-600" />}>
-            <div className="space-y-6">
-              <SingleSelect
-                label="Country"
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Source Platform Selection */}
+        <Section title="Source Platform" icon={<Globe size={18} className="text-indigo-600" />}>
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-500">Enter the platform you want to search leads from (e.g., LinkedIn, Twitter, Reddit, etc.)</p>
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Target Platform <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={activeSource}
+                onChange={(e) => setActiveSource(e.target.value)}
+                placeholder="e.g. LinkedIn, Twitter, Reddit"
+                className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                 required
-                options={countries}
-                value={formData.location.country}
-                onChange={(val) => handleSingleSelectChange("location.country", val)}
-                isLoading={isLoadingGeo.countries}
-                placeholder="Select country..."
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <SingleSelect
-                  label="Region / State"
-                  options={states}
-                  value={formData.location.region}
-                  onChange={(val) => handleSingleSelectChange("location.region", val)}
-                  isLoading={isLoadingGeo.states}
-                  disabled={!formData.location.country}
-                  placeholder={formData.location.country ? "Select state..." : "Select country first"}
-                />
-                <SingleSelect
-                  label="City"
-                  options={cities}
-                  value={formData.location.city}
-                  onChange={(val) => handleSingleSelectChange("location.city", val)}
-                  isLoading={isLoadingGeo.cities}
-                  disabled={!formData.location.region}
-                  placeholder={formData.location.region ? "Select city..." : "Select state first"}
-                />
+            </div>
+          </div>
+        </Section>
+
+        {/* Main Content: Form */}
+        <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-8">
+                {/* Section 1: Source Specific Targeting */}
+                <Section 
+                  title="Leads Targeting" 
+                  icon={SOURCES.find(s => s.id.toLowerCase() === activeSource.toLowerCase())?.icon || <Search size={18} className="text-indigo-600" />}
+                >
+                  <div className="space-y-6">
+                    {activeSource.toLowerCase() === "linkedin" && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Job Titles <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            name="job_titles"
+                            value={formData.job_titles}
+                            onChange={handleInputChange}
+                            placeholder="CEO, Founder, Co-Founder"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Seniority Level</label>
+                          <input
+                            type="text"
+                            name="seniority_level"
+                            value={formData.seniority_level}
+                            onChange={handleInputChange}
+                            placeholder="Owner, Director, C-Level"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Industries <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            name="industries"
+                            value={formData.industries}
+                            onChange={handleInputChange}
+                            placeholder="SaaS, Ecommerce, Fintech"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {activeSource.toLowerCase() === "upwork" && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Required Skills <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            name="skills"
+                            value={formData.skills}
+                            onChange={handleInputChange}
+                            placeholder="React, Node.js, Python"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Job Type</label>
+                          <select
+                            name="job_type"
+                            value={formData.job_type}
+                            onChange={handleInputChange}
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          >
+                            <option value="Fixed">Fixed Price</option>
+                            <option value="Hourly">Hourly</option>
+                            <option value="Both">Both</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Budget Range</label>
+                          <input
+                            type="text"
+                            name="budget_range"
+                            value={formData.budget_range}
+                            onChange={handleInputChange}
+                            placeholder="e.g. $1000 - $5000"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {activeSource.toLowerCase() === "ycombinator" && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">YC Batch</label>
+                          <input
+                            type="text"
+                            name="batch"
+                            value={formData.batch}
+                            onChange={handleInputChange}
+                            placeholder="W24, S23, All"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Industries <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            name="industries"
+                            value={formData.industries}
+                            onChange={handleInputChange}
+                            placeholder="AI, B2B, Consumer"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Company Stage</label>
+                          <input
+                            type="text"
+                            name="stage"
+                            value={formData.stage}
+                            onChange={handleInputChange}
+                            placeholder="Early, Growth, Public"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {activeSource.toLowerCase() === "reddit" && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Subreddits <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            name="subreddits"
+                            value={formData.subreddits}
+                            onChange={handleInputChange}
+                            placeholder="r/startups, r/saas"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Minimum User Karma</label>
+                          <input
+                            type="number"
+                            name="min_karma"
+                            value={formData.min_karma}
+                            onChange={handleInputChange}
+                            placeholder="100"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Section>
+
+                {/* Section 2: Common Filters */}
+                <Section title="General Filters" icon={<Search size={18} className="text-indigo-600" />}>
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Keywords</label>
+                      <input
+                        type="text"
+                        name="keywords"
+                        value={formData.keywords}
+                        onChange={handleInputChange}
+                        placeholder="AI, Automation, Remote"
+                        className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                      />
+                    </div>
+                    {activeSource.toLowerCase() === "linkedin" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Company Size</label>
+                          <input
+                            type="text"
+                            name="company_size"
+                            value={formData.company_size}
+                            onChange={handleInputChange}
+                            placeholder="1-10, 11-50"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Revenue Range</label>
+                          <input
+                            type="text"
+                            name="revenue_range"
+                            value={formData.revenue_range}
+                            onChange={handleInputChange}
+                            placeholder="$1M - $10M"
+                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Section>
+              </div>
+
+              <div className="space-y-8">
+                {/* Section 3: Location Filters */}
+                <Section title="Location Targeting" icon={<Globe size={18} className="text-indigo-600" />}>
+                  <div className="space-y-6">
+                    <SingleSelect
+                      label="Country"
+                      required
+                      options={countries}
+                      value={formData.location.country}
+                      onChange={(val) => handleSingleSelectChange("location.country", val)}
+                      isLoading={isLoadingGeo.countries}
+                      placeholder="Select country..."
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <SingleSelect
+                        label="Region / State"
+                        options={states}
+                        value={formData.location.region}
+                        onChange={(val) => handleSingleSelectChange("location.region", val)}
+                        isLoading={isLoadingGeo.states}
+                        disabled={!formData.location.country}
+                        placeholder={formData.location.country ? "Select state..." : "Select country first"}
+                      />
+                      <SingleSelect
+                        label="City"
+                        options={cities}
+                        value={formData.location.city}
+                        onChange={(val) => handleSingleSelectChange("location.city", val)}
+                        isLoading={isLoadingGeo.cities}
+                        disabled={!formData.location.region}
+                        placeholder={formData.location.region ? "Select city..." : "Select state first"}
+                      />
+                    </div>
+                  </div>
+                </Section>
               </div>
             </div>
-          </Section>
-        </div>
 
-        <div className="lg:col-span-2 pt-8">
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            type="submit"
-            disabled={isSending}
-            className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed text-lg"
-          >
-            {isSending ? (
-              <>
-                <Loader2 size={24} className="animate-spin" />
-                Sending to Webhook...
-              </>
-            ) : (
-              <>
-                <Send size={24} />
-                Submit Lead Criteria
-              </>
-            )}
-          </motion.button>
-        </div>
-      </form>
+      <div className="pt-8">
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                type="submit"
+                disabled={isSending}
+                className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed text-lg"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 size={24} className="animate-spin" />
+                    Sending to Webhook...
+                  </>
+                ) : (
+                  <>
+                    <Send size={24} />
+                    Submit Lead Criteria
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </form>
 
       {/* Results Display */}
       <AnimatePresence>
@@ -416,6 +578,7 @@ export const LeadForm: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };
