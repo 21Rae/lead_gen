@@ -11,6 +11,14 @@ export interface LeadFormData {
   keywords: string;
   location: LocationFilters;
   
+  // Gabriel specific
+  persona_name?: string;
+  business_type?: string;
+  revenue_stage?: string;
+  decision_maker?: string;
+  typical_problems?: string;
+  services_needed?: string;
+  
   // LinkedIn specific
   job_titles?: string;
   seniority_level?: string;
