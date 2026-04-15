@@ -63,36 +63,121 @@ const SOURCES = [
   { id: "Reddit" as SourceType, name: "Reddit", color: "bg-red-600", icon: <MessageSquare size={18} />, description: "Communities & discussions" }
 ];
 
+const PERSONA_TABS = [
+  "Startup Founder Launching Product",
+  "Ecommerce Brand Owner",
+  "B2B Company Marketing Lead",
+  "Tech Company Growth Manager",
+  "Agency Outsourcing Marketing",
+  "Product Launch Brand"
+] as const;
+
+type PersonaTab = typeof PERSONA_TABS[number];
+type TabType = "Main" | PersonaTab;
+
+const TAB_CONFIG: Record<TabType, { 
+  color: string, 
+  lightColor: string, 
+  shadowColor: string, 
+  iconColor: string,
+  gradient: string,
+  hoverBorder: string,
+  ringColor: string
+}> = {
+  "Main": { 
+    color: "bg-indigo-600", 
+    lightColor: "bg-indigo-50/30", 
+    shadowColor: "shadow-indigo-200", 
+    iconColor: "text-indigo-600",
+    gradient: "from-indigo-600 to-violet-600",
+    hoverBorder: "hover:border-indigo-300",
+    ringColor: "focus:ring-indigo-500/10 focus:border-indigo-500"
+  },
+  "Startup Founder Launching Product": { 
+    color: "bg-emerald-600", 
+    lightColor: "bg-emerald-50/30", 
+    shadowColor: "shadow-emerald-200", 
+    iconColor: "text-emerald-600",
+    gradient: "from-emerald-600 to-teal-600",
+    hoverBorder: "hover:border-emerald-300",
+    ringColor: "focus:ring-emerald-500/10 focus:border-emerald-500"
+  },
+  "Ecommerce Brand Owner": { 
+    color: "bg-orange-600", 
+    lightColor: "bg-orange-50/30", 
+    shadowColor: "shadow-orange-200", 
+    iconColor: "text-orange-600",
+    gradient: "from-orange-600 to-amber-600",
+    hoverBorder: "hover:border-orange-300",
+    ringColor: "focus:ring-orange-500/10 focus:border-orange-500"
+  },
+  "B2B Company Marketing Lead": { 
+    color: "bg-rose-600", 
+    lightColor: "bg-rose-50/30", 
+    shadowColor: "shadow-rose-200", 
+    iconColor: "text-rose-600",
+    gradient: "from-rose-600 to-pink-600",
+    hoverBorder: "hover:border-rose-300",
+    ringColor: "focus:ring-rose-500/10 focus:border-rose-500"
+  },
+  "Tech Company Growth Manager": { 
+    color: "bg-violet-600", 
+    lightColor: "bg-violet-50/30", 
+    shadowColor: "shadow-violet-200", 
+    iconColor: "text-violet-600",
+    gradient: "from-violet-600 to-purple-600",
+    hoverBorder: "hover:border-violet-300",
+    ringColor: "focus:ring-violet-500/10 focus:border-violet-500"
+  },
+  "Agency Outsourcing Marketing": { 
+    color: "bg-amber-600", 
+    lightColor: "bg-amber-50/30", 
+    shadowColor: "shadow-amber-200", 
+    iconColor: "text-amber-600",
+    gradient: "from-amber-600 to-yellow-600",
+    hoverBorder: "hover:border-amber-300",
+    ringColor: "focus:ring-amber-500/10 focus:border-amber-500"
+  },
+  "Product Launch Brand": { 
+    color: "bg-cyan-600", 
+    lightColor: "bg-cyan-50/30", 
+    shadowColor: "shadow-cyan-200", 
+    iconColor: "text-cyan-600",
+    gradient: "from-cyan-600 to-blue-600",
+    hoverBorder: "hover:border-cyan-300",
+    ringColor: "focus:ring-cyan-500/10 focus:border-cyan-500"
+  }
+};
+
 export const LeadForm: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"Main" | "Gabriel">("Main");
+  const [activeTab, setActiveTab] = useState<TabType>("Main");
   
-  const [mainState, setMainState] = useState({
-    activeSource: "LinkedIn",
-    formData: { ...INITIAL_SOURCE_DATA }
-  });
-  
-  const [gabrielState, setGabrielState] = useState({
-    activeSource: "LinkedIn",
-    formData: { ...INITIAL_SOURCE_DATA }
+  const [tabStates, setTabStates] = useState<Record<TabType, { activeSource: string, formData: LeadFormData }>>(() => {
+    const states: any = {
+      Main: { activeSource: "LinkedIn", formData: { ...INITIAL_SOURCE_DATA } }
+    };
+    PERSONA_TABS.forEach(tab => {
+      states[tab] = { activeSource: "LinkedIn", formData: { ...INITIAL_SOURCE_DATA } };
+    });
+    return states;
   });
 
-  const activeSource = activeTab === "Main" ? mainState.activeSource : gabrielState.activeSource;
-  const formData = activeTab === "Main" ? mainState.formData : gabrielState.formData;
+  const activeSource = tabStates[activeTab].activeSource;
+  const formData = tabStates[activeTab].formData;
+  const activeTheme = TAB_CONFIG[activeTab];
   
   const setActiveSource = (val: string) => {
-    if (activeTab === "Main") {
-      setMainState(prev => ({ ...prev, activeSource: val }));
-    } else {
-      setGabrielState(prev => ({ ...prev, activeSource: val }));
-    }
+    setTabStates(prev => ({
+      ...prev,
+      [activeTab]: { ...prev[activeTab], activeSource: val }
+    }));
   };
 
   const setFormData = (update: (prev: LeadFormData) => LeadFormData) => {
-    if (activeTab === "Main") {
-      setMainState(prev => ({ ...prev, formData: update(prev.formData) }));
-    } else {
-      setGabrielState(prev => ({ ...prev, formData: update(prev.formData) }));
-    }
+    setTabStates(prev => ({
+      ...prev,
+      [activeTab]: { ...prev[activeTab], formData: update(prev[activeTab].formData) }
+    }));
   };
   
   const [isSending, setIsSending] = useState(false);
@@ -185,14 +270,6 @@ export const LeadForm: React.FC = () => {
   };
 
   const validateForm = () => {
-    if (activeTab === "Gabriel") {
-      return (
-        formData.persona_name?.trim() !== "" &&
-        formData.business_type?.trim() !== "" &&
-        formData.location.region?.trim() !== ""
-      );
-    }
-
     const commonValid = formData.location.country.trim() !== "";
     
     switch (activeSource.toLowerCase()) {
@@ -214,9 +291,7 @@ export const LeadForm: React.FC = () => {
     setValidationError(null);
     
     if (!validateForm()) {
-      const errorMsg = activeTab === "Gabriel" 
-        ? "Please fill in all required fields (Persona Name, Business Type, and Region)."
-        : `Please fill in all required fields for ${activeSource}.`;
+      const errorMsg = `Please fill in all required fields for ${activeSource}.`;
       setValidationError(errorMsg);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -226,16 +301,11 @@ export const LeadForm: React.FC = () => {
     setShowResults(false);
     setError(null);
     
-    try {
-      let payload: any = {
-        source: activeSource,
-        tab: activeTab,
-        ...formData,
-      };
-
-      if (activeTab === "Main") {
-        payload = {
-          ...payload,
+      try {
+        const payload = {
+          source: activeSource,
+          tab: activeTab,
+          ...formData,
           // Process arrays if they exist
           job_titles: formData.job_titles?.split(",").map(t => t.trim()).filter(t => t) || [],
           seniority_level: formData.seniority_level?.split(",").map(t => t.trim()).filter(t => t) || [],
@@ -244,27 +314,15 @@ export const LeadForm: React.FC = () => {
           skills: formData.skills?.split(",").map(t => t.trim()).filter(t => t) || [],
           subreddits: formData.subreddits?.split(",").map(t => t.trim()).filter(t => t) || [],
         };
-      } else {
-        // Gabriel specific payload structure if needed, or just send everything
-        payload = {
-          persona_name: formData.persona_name,
-          business_type: formData.business_type,
-          company_size: formData.company_size,
-          revenue_stage: formData.revenue_stage,
-          decision_maker: formData.decision_maker,
-          typical_problems: formData.typical_problems,
-          services_needed: formData.services_needed,
-          budget_range: formData.budget_range,
-          country: formData.location.country,
-          region: formData.location.region,
-          tab: activeTab
-        };
-      }
 
       // Call the webhook directly to ensure compatibility with static hosting like Vercel
-      const WEBHOOK_URL = activeTab === "Main" 
-        ? "https://n8n-brum.srv1463595.hstgr.cloud/webhook-test/e1a5cdf5-7bf5-45a2-b642-ceca88537657"
-        : "https://n8n-brum.srv1463595.hstgr.cloud/webhook/fbc4c343-ca2b-4693-9180-7608433b67c2";
+      let WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook/fbc4c343-ca2b-4693-9180-7608433b67c2";
+      
+      if (activeTab === "Main") {
+        WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook-test/e1a5cdf5-7bf5-45a2-b642-ceca88537657";
+      } else if (activeTab === "Ecommerce Brand Owner") {
+        WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook-test/8b3e2d12-510d-4130-974b-fff89d21d8b0";
+      }
         
       await axios.post(WEBHOOK_URL, payload, {
         headers: { 'Content-Type': 'application/json' }
@@ -329,331 +387,226 @@ export const LeadForm: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Tab Selection */}
-        <div className="flex p-1.5 bg-zinc-100/50 rounded-2xl border border-zinc-200/50 w-fit mx-auto">
-          {(["Main", "Gabriel"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-8 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
-                activeTab === tab
-                  ? "bg-white text-indigo-600 shadow-sm border border-zinc-200/50"
-                  : "text-zinc-500 hover:text-zinc-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+      <div className="max-w-5xl mx-auto space-y-8">
+        {/* Tab Selection - Wrapping Pill Layout */}
+        <div className="flex flex-wrap justify-center gap-2 px-4">
+          {(["Main", ...PERSONA_TABS] as const).map((tab) => {
+            const theme = TAB_CONFIG[tab];
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 border ${
+                  activeTab === tab
+                    ? `${theme.color} text-white border-transparent shadow-lg ${theme.shadowColor} scale-105`
+                    : `bg-white text-zinc-600 border-zinc-200 ${theme.hoverBorder} ${theme.lightColor.replace('/30', '/10')}`
+                }`}
+              >
+                {tab === "Main" ? (
+                  <Zap size={16} className={activeTab === tab ? "text-white" : theme.iconColor} />
+                ) : (
+                  <User size={16} className={activeTab === tab ? "text-white" : theme.iconColor} />
+                )}
+                {tab}
+              </button>
+            );
+          })}
         </div>
 
         {/* Source Platform Selection */}
-        {activeTab === "Main" && (
-          <Section title="Source Platform" icon={<Globe size={18} className="text-indigo-600" />}>
-            <div className="space-y-4">
-              <p className="text-sm text-zinc-500">Enter the platform you want to search leads from (e.g., LinkedIn, Twitter, Reddit, etc.)</p>
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Target Platform <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={activeSource}
-                  onChange={(e) => setActiveSource(e.target.value)}
-                  placeholder="e.g. LinkedIn, Twitter, Reddit"
-                  className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                  required
-                />
-              </div>
+        <Section title="Source Platform" icon={<Globe size={18} className={activeTheme.iconColor} />} activeTheme={activeTheme}>
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-500">Enter the platform you want to search leads from (e.g., LinkedIn, Twitter, Reddit, etc.)</p>
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Target Platform <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={activeSource}
+                onChange={(e) => setActiveSource(e.target.value)}
+                placeholder="e.g. LinkedIn, Twitter, Reddit"
+                className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                required
+              />
             </div>
-          </Section>
-        )}
+          </div>
+        </Section>
 
         {/* Main Content: Form */}
         <form onSubmit={handleSubmit} className="space-y-8">
-          {activeTab === "Main" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-8">
-                {/* Section 1: Source Specific Targeting */}
-                <Section 
-                  title="Leads Targeting" 
-                  icon={SOURCES.find(s => s.id.toLowerCase() === activeSource.toLowerCase())?.icon || <Search size={18} className="text-indigo-600" />}
-                >
-                  <div className="space-y-6">
-                    {activeSource.toLowerCase() === "linkedin" && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Job Titles <span className="text-red-500">*</span></label>
-                          <input
-                            type="text"
-                            name="job_titles"
-                            value={formData.job_titles}
-                            onChange={handleInputChange}
-                            placeholder="CEO, Founder, Co-Founder"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Seniority Level</label>
-                          <input
-                            type="text"
-                            name="seniority_level"
-                            value={formData.seniority_level}
-                            onChange={handleInputChange}
-                            placeholder="Owner, Director, C-Level"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Industries <span className="text-red-500">*</span></label>
-                          <input
-                            type="text"
-                            name="industries"
-                            value={formData.industries}
-                            onChange={handleInputChange}
-                            placeholder="SaaS, Ecommerce, Fintech"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                            required
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {activeSource.toLowerCase() === "upwork" && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Required Skills <span className="text-red-500">*</span></label>
-                          <input
-                            type="text"
-                            name="skills"
-                            value={formData.skills}
-                            onChange={handleInputChange}
-                            placeholder="React, Node.js, Python"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Job Type</label>
-                          <select
-                            name="job_type"
-                            value={formData.job_type}
-                            onChange={handleInputChange}
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                          >
-                            <option value="Fixed">Fixed Price</option>
-                            <option value="Hourly">Hourly</option>
-                            <option value="Both">Both</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Budget Range</label>
-                          <input
-                            type="text"
-                            name="budget_range"
-                            value={formData.budget_range}
-                            onChange={handleInputChange}
-                            placeholder="e.g. $1000 - $5000"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {activeSource.toLowerCase() === "ycombinator" && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">YC Batch</label>
-                          <input
-                            type="text"
-                            name="batch"
-                            value={formData.batch}
-                            onChange={handleInputChange}
-                            placeholder="W24, S23, All"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Industries <span className="text-red-500">*</span></label>
-                          <input
-                            type="text"
-                            name="industries"
-                            value={formData.industries}
-                            onChange={handleInputChange}
-                            placeholder="AI, B2B, Consumer"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Company Stage</label>
-                          <input
-                            type="text"
-                            name="stage"
-                            value={formData.stage}
-                            onChange={handleInputChange}
-                            placeholder="Early, Growth, Public"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {activeSource.toLowerCase() === "reddit" && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Subreddits <span className="text-red-500">*</span></label>
-                          <input
-                            type="text"
-                            name="subreddits"
-                            value={formData.subreddits}
-                            onChange={handleInputChange}
-                            placeholder="r/startups, r/saas"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Minimum User Karma</label>
-                          <input
-                            type="number"
-                            name="min_karma"
-                            value={formData.min_karma}
-                            onChange={handleInputChange}
-                            placeholder="100"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </Section>
-
-                {/* Section 2: Common Filters */}
-                <Section title="General Filters" icon={<Search size={18} className="text-indigo-600" />}>
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Keywords</label>
-                      <input
-                        type="text"
-                        name="keywords"
-                        value={formData.keywords}
-                        onChange={handleInputChange}
-                        placeholder="AI, Automation, Remote"
-                        className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                      />
-                    </div>
-                    {activeSource.toLowerCase() === "linkedin" && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Company Size</label>
-                          <input
-                            type="text"
-                            name="company_size"
-                            value={formData.company_size}
-                            onChange={handleInputChange}
-                            placeholder="1-10, 11-50"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Revenue Range</label>
-                          <input
-                            type="text"
-                            name="revenue_range"
-                            value={formData.revenue_range}
-                            onChange={handleInputChange}
-                            placeholder="$1M - $10M"
-                            className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                          />
-                        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-8">
+              {/* Section 1: Source Specific Targeting */}
+              <Section 
+                title="Leads Targeting" 
+                icon={SOURCES.find(s => s.id.toLowerCase() === activeSource.toLowerCase())?.icon || <Search size={18} className={activeTheme.iconColor} />}
+                activeTheme={activeTheme}
+              >
+                <div className="space-y-6">
+                  {activeSource.toLowerCase() === "linkedin" && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Job Titles <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="job_titles"
+                          value={formData.job_titles}
+                          onChange={handleInputChange}
+                          placeholder="CEO, Founder, Co-Founder"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          required
+                        />
                       </div>
-                    )}
-                  </div>
-                </Section>
-              </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Seniority Level</label>
+                        <input
+                          type="text"
+                          name="seniority_level"
+                          value={formData.seniority_level}
+                          onChange={handleInputChange}
+                          placeholder="Owner, Director, C-Level"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Industries <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="industries"
+                          value={formData.industries}
+                          onChange={handleInputChange}
+                          placeholder="SaaS, Ecommerce, Fintech"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
 
-              <div className="space-y-8">
-                {/* Section 3: Location Filters */}
-                <Section title="Location Targeting" icon={<Globe size={18} className="text-indigo-600" />}>
-                  <div className="space-y-6">
-                    <SingleSelect
-                      label="Country"
-                      required
-                      options={countries}
-                      value={formData.location.country}
-                      onChange={(val) => handleSingleSelectChange("location.country", val)}
-                      isLoading={isLoadingGeo.countries}
-                      placeholder="Select country..."
+                  {activeSource.toLowerCase() === "upwork" && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Required Skills <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="skills"
+                          value={formData.skills}
+                          onChange={handleInputChange}
+                          placeholder="React, Node.js, Python"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Job Type</label>
+                        <select
+                          name="job_type"
+                          value={formData.job_type}
+                          onChange={handleInputChange}
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                        >
+                          <option value="Fixed">Fixed Price</option>
+                          <option value="Hourly">Hourly</option>
+                          <option value="Both">Both</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Budget Range</label>
+                        <input
+                          type="text"
+                          name="budget_range"
+                          value={formData.budget_range}
+                          onChange={handleInputChange}
+                          placeholder="e.g. $1000 - $5000"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {activeSource.toLowerCase() === "ycombinator" && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">YC Batch</label>
+                        <input
+                          type="text"
+                          name="batch"
+                          value={formData.batch}
+                          onChange={handleInputChange}
+                          placeholder="W24, S23, All"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Industries <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="industries"
+                          value={formData.industries}
+                          onChange={handleInputChange}
+                          placeholder="AI, B2B, Consumer"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Company Stage</label>
+                        <input
+                          type="text"
+                          name="stage"
+                          value={formData.stage}
+                          onChange={handleInputChange}
+                          placeholder="Early, Growth, Public"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {activeSource.toLowerCase() === "reddit" && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Subreddits <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          name="subreddits"
+                          value={formData.subreddits}
+                          onChange={handleInputChange}
+                          placeholder="r/startups, r/saas"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Minimum User Karma</label>
+                        <input
+                          type="number"
+                          name="min_karma"
+                          value={formData.min_karma}
+                          onChange={handleInputChange}
+                          placeholder="100"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Section 2: Common Filters */}
+              <Section title="General Filters" icon={<Search size={18} className={activeTheme.iconColor} />} activeTheme={activeTheme}>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Keywords</label>
+                    <input
+                      type="text"
+                      name="keywords"
+                      value={formData.keywords}
+                      onChange={handleInputChange}
+                      placeholder="AI, Automation, Remote"
+                      className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
                     />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <SingleSelect
-                        label="Region / State"
-                        options={states}
-                        value={formData.location.region}
-                        onChange={(val) => handleSingleSelectChange("location.region", val)}
-                        isLoading={isLoadingGeo.states}
-                        disabled={!formData.location.country}
-                        placeholder={formData.location.country ? "Select state..." : "Select country first"}
-                      />
-                      <SingleSelect
-                        label="City"
-                        options={cities}
-                        value={formData.location.city}
-                        onChange={(val) => handleSingleSelectChange("location.city", val)}
-                        isLoading={isLoadingGeo.cities}
-                        disabled={!formData.location.region}
-                        placeholder={formData.location.region ? "Select city..." : "Select state first"}
-                      />
-                    </div>
                   </div>
-                </Section>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-8">
-                <Section title="Persona Details" icon={<User size={18} className="text-indigo-600" />}>
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Persona Name <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        name="persona_name"
-                        value={formData.persona_name}
-                        onChange={handleInputChange}
-                        placeholder="e.g. Tech Founder, Marketing Manager"
-                        className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Business Type <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        name="business_type"
-                        value={formData.business_type}
-                        onChange={handleInputChange}
-                        placeholder="e.g. SaaS, Agency, E-commerce"
-                        className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Decision Maker</label>
-                      <input
-                        type="text"
-                        name="decision_maker"
-                        value={formData.decision_maker}
-                        onChange={handleInputChange}
-                        placeholder="e.g. CEO, CTO, Head of Sales"
-                        className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                      />
-                    </div>
-                  </div>
-                </Section>
-
-                <Section title="Company Profile" icon={<Building2 size={18} className="text-indigo-600" />}>
-                  <div className="space-y-6">
+                  {activeSource.toLowerCase() === "linkedin" && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Company Size</label>
@@ -662,87 +615,64 @@ export const LeadForm: React.FC = () => {
                           name="company_size"
                           value={formData.company_size}
                           onChange={handleInputChange}
-                          placeholder="e.g. 11-50, 51-200"
-                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          placeholder="1-10, 11-50"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Revenue Stage</label>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Revenue Range</label>
                         <input
                           type="text"
-                          name="revenue_stage"
-                          value={formData.revenue_stage}
+                          name="revenue_range"
+                          value={formData.revenue_range}
                           onChange={handleInputChange}
-                          placeholder="e.g. Seed, Series A, $1M-$5M"
-                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                          placeholder="$1M - $10M"
+                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
                         />
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Budget Range</label>
-                      <input
-                        type="text"
-                        name="budget_range"
-                        value={formData.budget_range}
-                        onChange={handleInputChange}
-                        placeholder="e.g. $5k - $20k / month"
-                        className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                      />
-                    </div>
-                  </div>
-                </Section>
-              </div>
-
-              <div className="space-y-8">
-                <Section title="Needs & Location" icon={<Globe size={18} className="text-indigo-600" />}>
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Typical Problems</label>
-                      <textarea
-                        name="typical_problems"
-                        value={formData.typical_problems}
-                        onChange={handleInputChange}
-                        placeholder="What pain points are they facing?"
-                        rows={3}
-                        className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Services They Need</label>
-                      <textarea
-                        name="services_needed"
-                        value={formData.services_needed}
-                        onChange={handleInputChange}
-                        placeholder="What solutions are they looking for?"
-                        rows={3}
-                        className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none"
-                      />
-                    </div>
-                    <div className="space-y-6">
-                      <SingleSelect
-                        label="Country"
-                        required
-                        options={countries}
-                        value={formData.location.country}
-                        onChange={(val) => handleSingleSelectChange("location.country", val)}
-                        isLoading={isLoadingGeo.countries}
-                        placeholder="Select country..."
-                      />
-                      <SingleSelect
-                        label="Region / State <span className='text-red-500'>*</span>"
-                        options={states}
-                        value={formData.location.region}
-                        onChange={(val) => handleSingleSelectChange("location.region", val)}
-                        isLoading={isLoadingGeo.states}
-                        disabled={!formData.location.country}
-                        placeholder={formData.location.country ? "Select region..." : "Select country first"}
-                      />
-                    </div>
-                  </div>
-                </Section>
-              </div>
+                  )}
+                </div>
+              </Section>
             </div>
-          )}
+
+            <div className="space-y-8">
+              {/* Section 3: Location Filters */}
+              <Section title="Location Targeting" icon={<Globe size={18} className={activeTheme.iconColor} />} activeTheme={activeTheme}>
+                <div className="space-y-6">
+                  <SingleSelect
+                    label="Country"
+                    required
+                    options={countries}
+                    value={formData.location.country}
+                    onChange={(val) => handleSingleSelectChange("location.country", val)}
+                    isLoading={isLoadingGeo.countries}
+                    placeholder="Select country..."
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <SingleSelect
+                      label="Region / State"
+                      options={states}
+                      value={formData.location.region}
+                      onChange={(val) => handleSingleSelectChange("location.region", val)}
+                      isLoading={isLoadingGeo.states}
+                      disabled={!formData.location.country}
+                      placeholder={formData.location.country ? "Select state..." : "Select country first"}
+                    />
+                    <SingleSelect
+                      label="City"
+                      options={cities}
+                      value={formData.location.city}
+                      onChange={(val) => handleSingleSelectChange("location.city", val)}
+                      isLoading={isLoadingGeo.cities}
+                      disabled={!formData.location.region}
+                      placeholder={formData.location.region ? "Select city..." : "Select state first"}
+                    />
+                  </div>
+                </div>
+              </Section>
+            </div>
+          </div>
 
       <div className="pt-8">
               <motion.button
@@ -750,7 +680,7 @@ export const LeadForm: React.FC = () => {
                 whileTap={{ scale: 0.99 }}
                 type="submit"
                 disabled={isSending}
-                className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed text-lg"
+                className={`w-full bg-gradient-to-r ${activeTheme.gradient} text-white font-bold py-4 rounded-2xl shadow-xl ${activeTheme.shadowColor} hover:shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed text-lg`}
               >
                 {isSending ? (
                   <>
@@ -811,16 +741,17 @@ interface SectionProps {
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  activeTheme: any;
 }
 
-const Section: React.FC<SectionProps> = ({ title, icon, children }) => (
+const Section: React.FC<SectionProps> = ({ title, icon, children, activeTheme }) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     className="bg-white border border-zinc-200 rounded-3xl shadow-sm hover:shadow-md transition-shadow duration-300 relative"
   >
-    <div className="px-8 py-5 border-b border-zinc-100 bg-zinc-50/30 flex items-center gap-4">
+    <div className={`px-8 py-5 border-b border-zinc-100 ${activeTheme.lightColor} flex items-center gap-4`}>
       <div className="p-2 rounded-xl bg-white border border-zinc-100 shadow-sm">
         {icon}
       </div>
