@@ -63,30 +63,9 @@ const SOURCES = [
   { id: "Reddit" as SourceType, name: "Reddit", color: "bg-red-600", icon: <MessageSquare size={18} />, description: "Communities & discussions" }
 ];
 
-const TAB_CONFIG: Record<string, { 
-  color: string, 
-  lightColor: string, 
-  shadowColor: string, 
-  iconColor: string,
-  gradient: string,
-  hoverBorder: string,
-  ringColor: string
-}> = {
-  "Main": { 
-    color: "bg-indigo-600", 
-    lightColor: "bg-indigo-50/30", 
-    shadowColor: "shadow-indigo-200", 
-    iconColor: "text-indigo-600",
-    gradient: "from-indigo-600 to-violet-600",
-    hoverBorder: "hover:border-indigo-300",
-    ringColor: "focus:ring-indigo-500/10 focus:border-indigo-500"
-  }
-};
-
 export const LeadForm: React.FC = () => {
   const [activeSource, setActiveSource] = useState<string>("LinkedIn");
   const [formData, setFormData] = useState<LeadFormData>({ ...INITIAL_SOURCE_DATA });
-  const activeTheme = TAB_CONFIG["Main"];
   
   const [isSending, setIsSending] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -212,7 +191,6 @@ export const LeadForm: React.FC = () => {
       try {
         const payload = {
           source: activeSource,
-          tab: "Main",
           ...formData,
           // Process arrays if they exist
           job_titles: formData.job_titles?.split(",").map(t => t.trim()).filter(t => t) || [],
@@ -223,8 +201,8 @@ export const LeadForm: React.FC = () => {
           subreddits: formData.subreddits?.split(",").map(t => t.trim()).filter(t => t) || [],
         };
 
-      // Call the webhook directly to ensure compatibility with static hosting like Vercel
-      const WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook-test/e1a5cdf5-7bf5-45a2-b642-ceca88537657";
+      // Call the webhook via environment variable for Vercel/Production
+      const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || "https://n8n-brum.srv1463595.hstgr.cloud/webhook/fbc4c343-ca2b-4693-9180-7608433b67c2";
         
       await axios.post(WEBHOOK_URL, payload, {
         headers: { 'Content-Type': 'application/json' }
@@ -291,7 +269,7 @@ export const LeadForm: React.FC = () => {
 
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Source Platform Selection */}
-        <Section title="Source Platform" icon={<Globe size={18} className={activeTheme.iconColor} />} activeTheme={activeTheme}>
+        <Section title="Source Platform" icon={<Globe size={18} className="text-indigo-600" />}>
           <div className="space-y-4">
             <p className="text-sm text-zinc-500">Enter the platform you want to search leads from (e.g., LinkedIn, Twitter, Reddit, etc.)</p>
             <div>
@@ -301,7 +279,7 @@ export const LeadForm: React.FC = () => {
                 value={activeSource}
                 onChange={(e) => setActiveSource(e.target.value)}
                 placeholder="e.g. LinkedIn, Twitter, Reddit"
-                className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                 required
               />
             </div>
@@ -315,8 +293,7 @@ export const LeadForm: React.FC = () => {
               {/* Section 1: Source Specific Targeting */}
               <Section 
                 title="Leads Targeting" 
-                icon={SOURCES.find(s => s.id.toLowerCase() === activeSource.toLowerCase())?.icon || <Search size={18} className={activeTheme.iconColor} />}
-                activeTheme={activeTheme}
+                icon={SOURCES.find(s => s.id.toLowerCase() === activeSource.toLowerCase())?.icon || <Search size={18} className="text-indigo-600" />}
               >
                 <div className="space-y-6">
                   {activeSource.toLowerCase() === "linkedin" && (
@@ -329,7 +306,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.job_titles}
                           onChange={handleInputChange}
                           placeholder="CEO, Founder, Co-Founder"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                           required
                         />
                       </div>
@@ -341,7 +318,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.seniority_level}
                           onChange={handleInputChange}
                           placeholder="Owner, Director, C-Level"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                         />
                       </div>
                       <div>
@@ -352,7 +329,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.industries}
                           onChange={handleInputChange}
                           placeholder="SaaS, Ecommerce, Fintech"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                           required
                         />
                       </div>
@@ -369,7 +346,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.skills}
                           onChange={handleInputChange}
                           placeholder="React, Node.js, Python"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                           required
                         />
                       </div>
@@ -379,7 +356,7 @@ export const LeadForm: React.FC = () => {
                           name="job_type"
                           value={formData.job_type}
                           onChange={handleInputChange}
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                         >
                           <option value="Fixed">Fixed Price</option>
                           <option value="Hourly">Hourly</option>
@@ -394,7 +371,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.budget_range}
                           onChange={handleInputChange}
                           placeholder="e.g. $1000 - $5000"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                         />
                       </div>
                     </>
@@ -410,7 +387,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.batch}
                           onChange={handleInputChange}
                           placeholder="W24, S23, All"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                         />
                       </div>
                       <div>
@@ -421,7 +398,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.industries}
                           onChange={handleInputChange}
                           placeholder="AI, B2B, Consumer"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                           required
                         />
                       </div>
@@ -433,7 +410,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.stage}
                           onChange={handleInputChange}
                           placeholder="Early, Growth, Public"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                         />
                       </div>
                     </>
@@ -449,7 +426,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.subreddits}
                           onChange={handleInputChange}
                           placeholder="r/startups, r/saas"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                           required
                         />
                       </div>
@@ -461,7 +438,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.min_karma}
                           onChange={handleInputChange}
                           placeholder="100"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                         />
                       </div>
                     </>
@@ -470,7 +447,7 @@ export const LeadForm: React.FC = () => {
               </Section>
 
               {/* Section 2: Common Filters */}
-              <Section title="General Filters" icon={<Search size={18} className={activeTheme.iconColor} />} activeTheme={activeTheme}>
+              <Section title="General Filters" icon={<Search size={18} className="text-indigo-600" />}>
                 <div className="space-y-6">
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Keywords</label>
@@ -480,7 +457,7 @@ export const LeadForm: React.FC = () => {
                       value={formData.keywords}
                       onChange={handleInputChange}
                       placeholder="AI, Automation, Remote"
-                      className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                      className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                     />
                   </div>
                   {activeSource.toLowerCase() === "linkedin" && (
@@ -493,7 +470,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.company_size}
                           onChange={handleInputChange}
                           placeholder="1-10, 11-50"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                         />
                       </div>
                       <div>
@@ -504,7 +481,7 @@ export const LeadForm: React.FC = () => {
                           value={formData.revenue_range}
                           onChange={handleInputChange}
                           placeholder="$1M - $10M"
-                          className={`w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 transition-all ${activeTheme.ringColor}`}
+                          className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                         />
                       </div>
                     </div>
@@ -515,7 +492,7 @@ export const LeadForm: React.FC = () => {
 
             <div className="space-y-8">
               {/* Section 3: Location Filters */}
-              <Section title="Location Targeting" icon={<Globe size={18} className={activeTheme.iconColor} />} activeTheme={activeTheme}>
+              <Section title="Location Targeting" icon={<Globe size={18} className="text-indigo-600" />}>
                 <div className="space-y-6">
                   <SingleSelect
                     label="Country"
@@ -557,7 +534,7 @@ export const LeadForm: React.FC = () => {
                 whileTap={{ scale: 0.99 }}
                 type="submit"
                 disabled={isSending}
-                className={`w-full bg-gradient-to-r ${activeTheme.gradient} text-white font-bold py-4 rounded-2xl shadow-xl ${activeTheme.shadowColor} hover:shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed text-lg`}
+                className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed text-lg"
               >
                 {isSending ? (
                   <>
@@ -618,17 +595,16 @@ interface SectionProps {
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
-  activeTheme: any;
 }
 
-const Section: React.FC<SectionProps> = ({ title, icon, children, activeTheme }) => (
+const Section: React.FC<SectionProps> = ({ title, icon, children }) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     className="bg-white border border-zinc-200 rounded-3xl shadow-sm hover:shadow-md transition-shadow duration-300 relative"
   >
-    <div className={`px-8 py-5 border-b border-zinc-100 ${activeTheme.lightColor} flex items-center gap-4`}>
+    <div className="px-8 py-5 border-b border-zinc-100 bg-zinc-50/30 flex items-center gap-4">
       <div className="p-2 rounded-xl bg-white border border-zinc-100 shadow-sm">
         {icon}
       </div>
