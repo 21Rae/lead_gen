@@ -63,19 +63,7 @@ const SOURCES = [
   { id: "Reddit" as SourceType, name: "Reddit", color: "bg-red-600", icon: <MessageSquare size={18} />, description: "Communities & discussions" }
 ];
 
-const PERSONA_TABS = [
-  "Startup Founder Launching Product",
-  "Ecommerce Brand Owner",
-  "B2B Company Marketing Lead",
-  "Tech Company Growth Manager",
-  "Agency Outsourcing Marketing",
-  "Product Launch Brand"
-] as const;
-
-type PersonaTab = typeof PERSONA_TABS[number];
-type TabType = "Main" | PersonaTab;
-
-const TAB_CONFIG: Record<TabType, { 
+const TAB_CONFIG: Record<string, { 
   color: string, 
   lightColor: string, 
   shadowColor: string, 
@@ -92,93 +80,13 @@ const TAB_CONFIG: Record<TabType, {
     gradient: "from-indigo-600 to-violet-600",
     hoverBorder: "hover:border-indigo-300",
     ringColor: "focus:ring-indigo-500/10 focus:border-indigo-500"
-  },
-  "Startup Founder Launching Product": { 
-    color: "bg-emerald-600", 
-    lightColor: "bg-emerald-50/30", 
-    shadowColor: "shadow-emerald-200", 
-    iconColor: "text-emerald-600",
-    gradient: "from-emerald-600 to-teal-600",
-    hoverBorder: "hover:border-emerald-300",
-    ringColor: "focus:ring-emerald-500/10 focus:border-emerald-500"
-  },
-  "Ecommerce Brand Owner": { 
-    color: "bg-orange-600", 
-    lightColor: "bg-orange-50/30", 
-    shadowColor: "shadow-orange-200", 
-    iconColor: "text-orange-600",
-    gradient: "from-orange-600 to-amber-600",
-    hoverBorder: "hover:border-orange-300",
-    ringColor: "focus:ring-orange-500/10 focus:border-orange-500"
-  },
-  "B2B Company Marketing Lead": { 
-    color: "bg-rose-600", 
-    lightColor: "bg-rose-50/30", 
-    shadowColor: "shadow-rose-200", 
-    iconColor: "text-rose-600",
-    gradient: "from-rose-600 to-pink-600",
-    hoverBorder: "hover:border-rose-300",
-    ringColor: "focus:ring-rose-500/10 focus:border-rose-500"
-  },
-  "Tech Company Growth Manager": { 
-    color: "bg-violet-600", 
-    lightColor: "bg-violet-50/30", 
-    shadowColor: "shadow-violet-200", 
-    iconColor: "text-violet-600",
-    gradient: "from-violet-600 to-purple-600",
-    hoverBorder: "hover:border-violet-300",
-    ringColor: "focus:ring-violet-500/10 focus:border-violet-500"
-  },
-  "Agency Outsourcing Marketing": { 
-    color: "bg-amber-600", 
-    lightColor: "bg-amber-50/30", 
-    shadowColor: "shadow-amber-200", 
-    iconColor: "text-amber-600",
-    gradient: "from-amber-600 to-yellow-600",
-    hoverBorder: "hover:border-amber-300",
-    ringColor: "focus:ring-amber-500/10 focus:border-amber-500"
-  },
-  "Product Launch Brand": { 
-    color: "bg-cyan-600", 
-    lightColor: "bg-cyan-50/30", 
-    shadowColor: "shadow-cyan-200", 
-    iconColor: "text-cyan-600",
-    gradient: "from-cyan-600 to-blue-600",
-    hoverBorder: "hover:border-cyan-300",
-    ringColor: "focus:ring-cyan-500/10 focus:border-cyan-500"
   }
 };
 
 export const LeadForm: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>("Main");
-  
-  const [tabStates, setTabStates] = useState<Record<TabType, { activeSource: string, formData: LeadFormData }>>(() => {
-    const states: any = {
-      Main: { activeSource: "LinkedIn", formData: { ...INITIAL_SOURCE_DATA } }
-    };
-    PERSONA_TABS.forEach(tab => {
-      states[tab] = { activeSource: "LinkedIn", formData: { ...INITIAL_SOURCE_DATA } };
-    });
-    return states;
-  });
-
-  const activeSource = tabStates[activeTab].activeSource;
-  const formData = tabStates[activeTab].formData;
-  const activeTheme = TAB_CONFIG[activeTab];
-  
-  const setActiveSource = (val: string) => {
-    setTabStates(prev => ({
-      ...prev,
-      [activeTab]: { ...prev[activeTab], activeSource: val }
-    }));
-  };
-
-  const setFormData = (update: (prev: LeadFormData) => LeadFormData) => {
-    setTabStates(prev => ({
-      ...prev,
-      [activeTab]: { ...prev[activeTab], formData: update(prev[activeTab].formData) }
-    }));
-  };
+  const [activeSource, setActiveSource] = useState<string>("LinkedIn");
+  const [formData, setFormData] = useState<LeadFormData>({ ...INITIAL_SOURCE_DATA });
+  const activeTheme = TAB_CONFIG["Main"];
   
   const [isSending, setIsSending] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -304,7 +212,7 @@ export const LeadForm: React.FC = () => {
       try {
         const payload = {
           source: activeSource,
-          tab: activeTab,
+          tab: "Main",
           ...formData,
           // Process arrays if they exist
           job_titles: formData.job_titles?.split(",").map(t => t.trim()).filter(t => t) || [],
@@ -316,13 +224,7 @@ export const LeadForm: React.FC = () => {
         };
 
       // Call the webhook directly to ensure compatibility with static hosting like Vercel
-      let WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook/fbc4c343-ca2b-4693-9180-7608433b67c2";
-      
-      if (activeTab === "Main") {
-        WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook-test/e1a5cdf5-7bf5-45a2-b642-ceca88537657";
-      } else if (activeTab === "Ecommerce Brand Owner") {
-        WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook-test/8b3e2d12-510d-4130-974b-fff89d21d8b0";
-      }
+      const WEBHOOK_URL = "https://n8n-brum.srv1463595.hstgr.cloud/webhook-test/e1a5cdf5-7bf5-45a2-b642-ceca88537657";
         
       await axios.post(WEBHOOK_URL, payload, {
         headers: { 'Content-Type': 'application/json' }
@@ -388,31 +290,6 @@ export const LeadForm: React.FC = () => {
       </AnimatePresence>
 
       <div className="max-w-5xl mx-auto space-y-8">
-        {/* Tab Selection - Wrapping Pill Layout */}
-        <div className="flex flex-wrap justify-center gap-2 px-4">
-          {(["Main", ...PERSONA_TABS] as const).map((tab) => {
-            const theme = TAB_CONFIG[tab];
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2 border ${
-                  activeTab === tab
-                    ? `${theme.color} text-white border-transparent shadow-lg ${theme.shadowColor} scale-105`
-                    : `bg-white text-zinc-600 border-zinc-200 ${theme.hoverBorder} ${theme.lightColor.replace('/30', '/10')}`
-                }`}
-              >
-                {tab === "Main" ? (
-                  <Zap size={16} className={activeTab === tab ? "text-white" : theme.iconColor} />
-                ) : (
-                  <User size={16} className={activeTab === tab ? "text-white" : theme.iconColor} />
-                )}
-                {tab}
-              </button>
-            );
-          })}
-        </div>
-
         {/* Source Platform Selection */}
         <Section title="Source Platform" icon={<Globe size={18} className={activeTheme.iconColor} />} activeTheme={activeTheme}>
           <div className="space-y-4">
